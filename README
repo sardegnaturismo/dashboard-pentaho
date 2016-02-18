@@ -1,0 +1,11 @@
+#BUILD IMAGE
+docker build -t pentaho:5.4 .
+
+#RUN CONTAINER
+docker run --name pentaho -dti -p 8080:8080 -P --restart=always pentaho:5.4
+
+#CONNECT TO BASH
+#user pentaho
+docker exec -ti pentaho bash
+#user root
+docker exec -ti -u root pentaho bash
