@@ -32,7 +32,8 @@ RUN /usr/bin/wget --progress=dot:giga http://downloads.sourceforge.net/project/p
     /usr/bin/unzip -q /tmp/biserver-ce-${BISERVER_TAG}.zip -d  $PENTAHO_HOME; \
     rm -f /tmp/biserver-ce-${BISERVER_TAG}.zip $PENTAHO_HOME/biserver-ce/promptuser.sh; \
     sed -i -e 's/\(exec ".*"\) start/\1 run/' $PENTAHO_HOME/biserver-ce/tomcat/bin/startup.sh; \
-    chmod +x $PENTAHO_HOME/biserver-ce/start-pentaho.sh;
+    chmod +x $PENTAHO_HOME/biserver-ce/start-pentaho.sh; \
+    sed -i -e 's/requestParameterAuthenticationEnabled=false/requestParameterAuthenticationEnabled=true/' $PENTAHO_HOME/biserver-ce/pentaho-solutions/system/security.properties;
 
 # Script di avvio del servizio
 COPY ./start $PENTAHO_HOME/start
