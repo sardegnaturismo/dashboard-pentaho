@@ -1,6 +1,9 @@
 FROM ubuntu:14.04
 
 # Init ENV
+ENV LANG it_IT.UTF-8
+ENV LANGUAGE it
+
 ENV DEBIAN_FRONTEND noninteractive
 
 ENV BISERVER_VERSION 5.4
@@ -33,7 +36,8 @@ RUN /usr/bin/wget --progress=dot:giga http://downloads.sourceforge.net/project/p
     rm -f /tmp/biserver-ce-${BISERVER_TAG}.zip $PENTAHO_HOME/biserver-ce/promptuser.sh; \
     sed -i -e 's/\(exec ".*"\) start/\1 run/' $PENTAHO_HOME/biserver-ce/tomcat/bin/startup.sh; \
     chmod +x $PENTAHO_HOME/biserver-ce/start-pentaho.sh; \
-    sed -i -e 's/requestParameterAuthenticationEnabled=false/requestParameterAuthenticationEnabled=true/' $PENTAHO_HOME/biserver-ce/pentaho-solutions/system/security.properties;
+    sed -i -e 's/requestParameterAuthenticationEnabled=false/requestParameterAuthenticationEnabled=true/' $PENTAHO_HOME/biserver-ce/pentaho-solutions/system/security.properties; \
+    sed -i -e 's/CATALINA_OPTS="-Xms1024m -Xmx2048m -XX:MaxPermSize=256m -Dsun.rmi.dgc.client.gcInterval=3600000 -Dsun.rmi.dgc.server.gcInterval=3600000"/CATALINA_OPTS="-Xms1024m -Xmx2048m -XX:MaxPermSize=256m -Dsun.rmi.dgc.client.gcInterval=3600000 -Dsun.rmi.dgc.server.gcInterval=3600000 -Dfile.encoding=UTF-8"/' $PENTAHO_HOME/biserver-ce/start-pentaho.sh;
 
 # Script di avvio del servizio
 COPY ./start $PENTAHO_HOME/start
