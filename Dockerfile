@@ -41,6 +41,9 @@ RUN /usr/bin/wget --progress=dot:giga http://downloads.sourceforge.net/project/p
 
 # Script di avvio del servizio
 COPY ./start $PENTAHO_HOME/start
+# Loghi e mappe RAS
+COPY ./loghi/markerblu.png $PENTAHO_HOME/biserver-ce/pentaho-solutions/system/pentaho-cdf-dd/resources/custom/components/NewMapComponent/images/markerblu.png
+COPY mappe $PENTAHO_HOME/biserver-ce/pentaho-solutions/system/pentaho-cdf-dd/resources/custom/components/NewMapComponent/maps
 
 USER root
 RUN chown -R pentaho:pentaho ${PENTAHO_HOME}
