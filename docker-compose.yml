@@ -1,0 +1,35 @@
+httpd:
+  image: httpd:2.4
+  ports:
+      - 8081:80
+  links:
+      - php
+  volumes:
+      - "./docker/httpd/httpd.conf:/usr/local/apache2/conf/httpd.conf"
+  volumes_from:
+      - app
+
+php:
+  image: wellnetimages/php:7.0.5
+  expose:
+    - 9000
+  volumes:
+      - "./docker/php/php.ini:/usr/local/etc/php/conf.d/php.ini"
+  volumes_from:
+      - app
+app:
+  image: wellnetimages/php:7.0.5
+  volumes:
+    - ".:/var/www"
+  command: "true"
+
+pentaho:
+  image: sardegnaturismo/dashboard-pentaho:5.4
+  restart: always
+  ports:
+    - "8080:8080"
+
+cron:
+  image: wellnetimages/cron:latest
+  volumes:
+    - "./docker/cron/kettle:/etc/cron.d/kettle"

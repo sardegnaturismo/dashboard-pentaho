@@ -1,0 +1,21 @@
+.1 Parted
+sudo parted /dev/xvdf mklabel gpt mkpart primary xfs 2048s 100%
+
+.2 Edit /etc/fstab
+/dev/xvdf1  /data       xfs     defaults,inode64,logbufs=8,logbsize=256k,noatime 0 0
+
+.3 Mkfs
+sudo mkfs.xfs -i size=512 -n size=8192 /dev/xvdf1
+
+.4 Mount
+sudo mount /data
+
+.5 Stop Docker
+sudo service docker stop
+
+.6 Change storage directory
+Edit /etc/sysconfig/docker-storage
+DOCKER_STORAGE_OPTIONS="-g /data/docker"
+
+.7 Start Docker
+sudo service docker start

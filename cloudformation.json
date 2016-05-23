@@ -1,0 +1,162 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Penataho stack",
+    "Parameters": {
+        "KeyName": {
+            "Description": "Default PEM keyname",
+            "Type": "AWS::EC2::KeyPair::KeyName"
+        },
+        "VPCId": {
+            "Description": "Default VPC id",
+            "Type": "AWS::EC2::VPC::Id"
+        },
+        "DBName": {
+            "Default": "myDatabase",
+            "Description" : "Postgres database name",
+            "Type": "String",
+            "MinLength": "1",
+            "MaxLength": "64",
+            "AllowedPattern" : "[a-zA-Z][a-zA-Z0-9]*",
+            "ConstraintDescription" : "must begin with a letter and contain only alphanumeric characters."
+        },
+        "DBUser": {
+            "NoEcho": "true",
+            "Description" : "Username for Postgres database access",
+            "Type": "String",
+            "MinLength": "1",
+            "MaxLength": "16",
+            "AllowedPattern" : "[a-zA-Z][a-zA-Z0-9]*",
+            "ConstraintDescription" : "must begin with a letter and contain only alphanumeric characters."
+        },
+        "DBPassword": {
+            "NoEcho": "true",
+            "Description" : "Password for Postgres database access",
+            "Type": "String",
+            "MinLength": "8",
+            "MaxLength": "41",
+            "AllowedPattern" : "[a-zA-Z0-9]*",
+            "ConstraintDescription" : "must contain only alphanumeric characters."
+        },
+        "DBAllocatedStorage": {
+            "Default": "5",
+            "Description" : "The size of the database (Gb)",
+            "Type": "Number",
+            "MinValue": "5",
+            "MaxValue": "1024",
+            "ConstraintDescription" : "must be between 5 and 1024Gb."
+        },
+        "MultiAZDatabase": {
+            "Default": "true",
+            "Description" : "Create a Multi-AZ Postgres Amazon RDS database instance",
+            "Type": "String",
+            "AllowedValues" : [ "true", "false" ],
+            "ConstraintDescription" : "must be either true or false."
+        }
+    },
+    "Mappings": {
+        "EC2RegionMap": {
+            "eu-west-1": {"AmazonLinuxAMIHVMEBSBacked64bit": "ami-bff32ccc"}
+        }
+    },
+    "Resources": {
+        "VPCSecurityGroup": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "VpcId": { "Ref": "VPCId" },
+                "GroupDescription": "Enable Postgres RDS access",
+                "SecurityGroupIngress": [
+                    { "IpProtocol": "tcp", "SourceSecurityGroupId" : { "Ref" : "WebSecurityGroup" }, "FromPort": "5432", "ToPort": "5432"  }
+                ]
+            }
+        },
+        "DBSecurityGroup": {
+            "Type": "AWS::RDS::DBSecurityGroup",
+            "Properties": {
+                "GroupDescription" : "Security group for RDS DB Instance.",
+                "DBSecurityGroupIngress": {
+                    "EC2SecurityGroupId": { "Ref": "WebSecurityGroup" }
+                }
+            }
+        },
+        "SSHSecurityGroup": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "VpcId": { "Ref": "VPCId" },
+                "GroupDescription": "Enable SSH access",
+                "SecurityGroupIngress": [
+                    { "IpProtocol": "tcp", "CidrIp": "0.0.0.0/0", "FromPort": "22", "ToPort": "22"  }
+                ]
+            }
+        },
+        "WebSecurityGroup": {
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupDescription": "Enable HTTP/HTTPS access",
+                "VpcId": { "Ref": "VPCId" },
+                "SecurityGroupIngress": [
+                    { "IpProtocol": "tcp", "CidrIp": "0.0.0.0/0", "FromPort": "80", "ToPort": "80"  },
+                    { "IpProtocol": "tcp", "CidrIp": "0.0.0.0/0", "FromPort": "8080", "ToPort": "8080"  },
+                    { "IpProtocol": "tcp", "CidrIp": "0.0.0.0/0", "FromPort": "443", "ToPort": "443" }
+                ]
+            }
+        },
+        "Postgres": {
+            "Type": "AWS::RDS::DBInstance",
+            "Properties": {
+                "DBInstanceClass": "db.m4.large",
+                "Engine": "Postgres",
+                "EngineVersion": "9.3",
+                "BackupRetentionPeriod": "7",
+                "MultiAZ" : { "Ref": "MultiAZDatabase" },
+                "DBName": { "Ref": "DBName" },
+                "MasterUsername": { "Ref": "DBUser" },
+                "MasterUserPassword": { "Ref" : "DBPassword" },
+                "AllocatedStorage": { "Ref" : "DBAllocatedStorage" },
+                "VPCSecurityGroups": [ { "Ref": "VPCSecurityGroup" } ],
+                "DBSecurityGroups": [ { "Ref": "DBSecurityGroup" } ]
+            }
+        },
+        "EC2Instance": {
+            "Type": "AWS::EC2::Instance",
+            "Metadata": {
+                "AWS::CloudFormation::Init": {
+                    "config": {
+                        "packages": {
+                            "yum": {
+                                "docker": [],
+                                "git": [],
+                                "htop": []
+                            }
+                        },
+                        "services": {
+                            "sysvinit": {
+                                "docker": { "enabled": "true", "ensureRunning": "true" }
+                            }
+                        },
+                        "commands": {
+                            "pip": "sudo pip install docker-compose",
+                            "usermod": "sudo usermod -a -G docker ec2-user"
+                        }
+                    }
+                }
+            },
+            "Properties": {
+                "ImageId": { "Fn::FindInMap": [ "EC2RegionMap", { "Ref": "AWS::Region" }, "AmazonLinuxAMIHVMEBSBacked64bit" ] },
+                "InstanceType": "m4.large",
+                "SecurityGroupIds": [ { "Ref": "WebSecurityGroup" }, { "Ref": "SSHSecurityGroup" } ],
+                "KeyName": { "Ref": "KeyName" },
+                "UserData": { "Fn::Base64": { "Fn::Join": [ "", [
+                    "#!/bin/bash -ex\n",
+                    "yum update -y aws-cfn-bootstrap\n",
+                    "/opt/aws/bin/cfn-init -v --stack ", {"Ref": "AWS::StackName"}, " --resource EC2Instance --region ", {"Ref": "AWS::Region"}, "\n"
+                ] ] } }
+            }
+        }
+    },
+    "Outputs": {
+        "InstanceId": {
+            "Description": "EC2 created",
+            "Value": { "Ref": "EC2Instance" }
+        }
+    }
+}
