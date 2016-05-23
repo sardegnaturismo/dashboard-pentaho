@@ -12,12 +12,12 @@ function ec2_status {
 
 function ec2_start {
         echo "START"
-        #aws ec2 start-instances --instance-ids $INSTANCE_ID
+        aws ec2 start-instances --instance-ids $INSTANCE_ID
 }
 
 function ec2_stop {
         echo "STOP"
-        #aws ec2 stop-instances --instance-ids $INSTANCE_ID
+        aws ec2 stop-instances --instance-ids $INSTANCE_ID
 }
 
 
