@@ -17,6 +17,7 @@ php:
       - "./docker/php/php.ini:/usr/local/etc/php/conf.d/php.ini"
   volumes_from:
       - app
+
 app:
   image: wellnetimages/php:7.0.5
   volumes:
@@ -28,8 +29,3 @@ pentaho:
   restart: always
   ports:
     - "8080:8080"
-
-cron:
-  image: wellnetimages/cron:latest
-  volumes:
-    - "./docker/cron/kettle:/etc/cron.d/kettle"
